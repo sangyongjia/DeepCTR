@@ -168,10 +168,13 @@ if __name__ == "__main__":
     linear_feature_columns = varlen_feature_columns
     dnn_feature_columns = varlen_feature_columns
     callbacks = []
-    model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256], task='binary',
-                   dnn_dropout=0, dnn_activation='relu', dnn_use_bn=False)
-    model.compile("adam", "binary_crossentropy", metrics=['binary_crossentropy', tf.keras.metrics.AUC()])
-    model.run_eagerly = True
+    strategy = tf.distribute.MirroredStrategy(devices=['/gpu:1','/gpu:2','/gpu:3'])
+    # strategy = tf.distribute.MirroredStrategy(devices=['/gpu:3'])
+    with strategy.scope():
+        model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256], task='binary',
+                       dnn_dropout=0, dnn_activation='relu', dnn_use_bn=False)
+        model.compile("adam", "binary_crossentropy", metrics=['binary_crossentropy', tf.keras.metrics.AUC()])
+    # model.run_eagerly = True
     model.fit_generator(generator=get_dataset(), steps_per_epoch=None, epochs=10, verbose=2, callbacks=callbacks,
                         validation_data=get_dataset(eval_data_path), validation_steps=None, validation_freq=1,
                         class_weight=None,
