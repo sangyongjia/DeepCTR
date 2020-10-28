@@ -1341,7 +1341,7 @@ vocabulary : { "product_ctg3_sparse": 6000,
                "hour1_user_productpageview_click_ctg3_sparse": 6000,
                "hour7_user_productpageview_click_ctg3_sparse": 6000,
                "hour24_user_productpageview_click_ctg3_sparse": 6000,}
-train_data_path: /alg_data/syj/akc_h5_search_rank_data/train_data_20200706-0909_ctcvr_1:4:5_standard_svm2csv.txt
-eval_data_path: /alg_data/syj/akc_h5_search_rank_data/eval_data_20200706-0909_ctcvr_1:4:5_standard_svm2csv.txt
-#train_data_path: ./test_data.txt
-#eval_data_path: ./test_data.txt
+#train_data_path: /alg_data/syj/akc_h5_search_rank_data/train_data_20200706-0909_ctcvr_1:4:5_standard_svm2csv.txt
+#eval_data_path: /alg_data/syj/akc_h5_search_rank_data/eval_data_20200706-0909_ctcvr_1:4:5_standard_svm2csv.txt
+train_data_path: ./test_data.txt
+eval_data_path: ./test_data.txt

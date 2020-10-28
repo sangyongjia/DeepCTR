@@ -59,7 +59,7 @@ if __name__ == "__main__":
     model_input = {name: data[name] for name in sparse_features}  #
     model_input["genres"] = genres_list
     model_input["genres_weight"] = np.random.randn(data.shape[0], max_len, 1)
-
+    print("data.shape[0]:", data.shape[0])
     # 4.Define Model,compile and train
     model = DeepFM(linear_feature_columns, dnn_feature_columns, task='regression')
 

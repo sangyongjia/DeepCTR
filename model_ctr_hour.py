@@ -23,11 +23,8 @@ import yaml
 
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-<<<<<<< HEAD
 config.gpu_options.per_process_gpu_memory_fraction = 1
-=======
-config.gpu_options.per_process_gpu_memory_fraction = 0.2
->>>>>>> 57cd2a9e6e629d567b541c3850d2d73161f6f048
+
 tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session(config=config))
 
 if __name__ == "__main__":
@@ -61,15 +58,6 @@ if __name__ == "__main__":
                 for key in vocabulary_size.keys():
                     if key in feat_name:
                         vocabulary_size_val = vocabulary_size[key]
-<<<<<<< HEAD
-                        print("key:{0},size:{1}".format(key, vocabulary_size_val))
-                        break
-                print("size:{0}".format(vocabulary_size_val))
-                varlen_feature_columns.append(VarLenSparseFeat(
-                    SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False), maxlen=1,
-                    combiner='mean', weight_name=feat_name + '_weight'))
-                select_columns_name.append(feat_name)
-=======
                         print("key:{0},size:{1},feature name:{2}".format(key, vocabulary_size_val, feat_name))
                         break
                 print("size:{0},feature name:{1}".format(vocabulary_size_val, feat_name))
@@ -79,7 +67,7 @@ if __name__ == "__main__":
                     combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
                 select_columns_name.append(feat_name)
                 vocabulary_size_val = 1
->>>>>>> 57cd2a9e6e629d567b541c3850d2d73161f6f048
+
         else:
             for feat_name in all_columns:
                 if feat_name[:4] == 'hour':
@@ -186,7 +174,7 @@ if __name__ == "__main__":
     callbacks = []
     GPU = True
     if GPU:
-        strategy = tf.distribute.MirroredStrategy(devices=['/gpu:0','/gpu:1', '/gpu:2', '/gpu:3'])
+        strategy = tf.distribute.MirroredStrategy(devices=['/gpu:0', '/gpu:1', '/gpu:2', '/gpu:3'])
         # strategy = tf.distribute.MirroredStrategy(devices=['/gpu:3'])
         with strategy.scope():
             model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256],

@@ -159,7 +159,7 @@ class WeightedSequenceLayer(Layer):
         value_input = tf.where(mask, value_input, paddings)
 
         if self.weight_normalization:
-            value_input = softmax(value_input, dim=1)
+            value_input = softmax(value_input, dim=1)  # issue position 这个位置为啥softmax之后value_input全部变成了1？
 
         if len(value_input.shape) == 2:
             value_input = tf.expand_dims(value_input, axis=2)

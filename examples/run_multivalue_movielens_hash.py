@@ -37,7 +37,7 @@ if __name__ == "__main__":
     # 3.generate input data for model
     model_input = {name: data[name] for name in feature_names}
     model_input['genres'] = genres_list
-
+    print("model_input:", model_input)
     # 4.Define Model,compile and train
     model = DeepFM(linear_feature_columns, dnn_feature_columns, task='regression')
 

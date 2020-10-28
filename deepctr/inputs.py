@@ -39,7 +39,7 @@ def create_embedding_dict(sparse_feature_columns, varlen_sparse_feature_columns,
                             embeddings_regularizer=l2(
                                 l2_reg),
                             name=prefix + '_seq_emb_' + feat.name,
-                            mask_zero=seq_mask_zero)
+                            mask_zero=seq_mask_zero)     # need to research deeply about mask ,how does it work and how does it transport
             emb.trainable = feat.trainable
             sparse_embedding[feat.embedding_name] = emb
     return sparse_embedding
