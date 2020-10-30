@@ -49,7 +49,7 @@ if __name__ == "__main__":
     vocabulary_size = conf['vocabulary']
     use_weight = True
     use_hour_features = False
-    use_day_sparse_feature_weight = True
+    use_day_sparse_feature_weight = False
     varlen_feature_columns = []
     fixed_feature_columns = []
     if use_weight:
@@ -206,8 +206,8 @@ def get_dataset(file_path=train_data_path, perform_shuffle=True, repeat_count=1,
     return dataset
 
 
-linear_feature_columns = varlen_feature_columns
-dnn_feature_columns = varlen_feature_columns
+linear_feature_columns = varlen_feature_columns + fixed_feature_columns
+dnn_feature_columns = varlen_feature_columns + fixed_feature_columns
 callbacks = []
 GPU = False
 if GPU:
