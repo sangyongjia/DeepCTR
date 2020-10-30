@@ -87,7 +87,7 @@ def embedding_lookup(sparse_embedding_dict, sparse_input_dict, sparse_feature_co
 
             group_embedding_dict[fc.group_name].append(sparse_embedding_dict[embedding_name](lookup_idx))
     if to_list:
-        return list(chain.from_iterable(group_embedding_dict.values()))
+        return list(chain.from_iterable(group_embedding_dict.values()))  # 搞清楚这个是用来做什么的？
     return group_embedding_dict
 
 

@@ -20,6 +20,7 @@ from deepctr.models import DeepFM
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.WARN)
 # tf.logging.set_verbosity(tf.logging.INFO)
 import yaml
+import re
 
 config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -47,10 +48,12 @@ if __name__ == "__main__":
     select_columns_name = []
     vocabulary_size = conf['vocabulary']
     use_weight = True
-    use_hour_features = True
+    use_hour_features = False
+    use_day_sparse_feature_weight = True
     varlen_feature_columns = []
+    fixed_feature_columns = []
     if use_weight:
-        if use_hour_features:
+        if use_hour_features:  # 复现最优结果
             for feat_name in all_columns:
                 if feat_name[-6:] == 'weight' or feat_name in ['ctr_label', 'cvr_label']:
                     select_columns_name.append(feat_name)
@@ -69,20 +72,54 @@ if __name__ == "__main__":
                 vocabulary_size_val = 1
 
         else:
-            for feat_name in all_columns:
-                if feat_name[:4] == 'hour':
-                    continue
-                if feat_name[-6:] == 'weight':
+            if use_day_sparse_feature_weight:  # 排除所有小时级特征
+                print("排除所有小时级特征:")
+                for feat_name in all_columns:
+                    if feat_name[:4] == 'hour':
+                        continue
+                    if feat_name[-6:] == 'weight' or feat_name in ['ctr_label', 'cvr_label']:
+                        select_columns_name.append(feat_name)
+                        continue
+                    for key in vocabulary_size.keys():
+                        if key in feat_name:
+                            vocabulary_size_val = vocabulary_size[key]
+                            break
+                    varlen_feature_columns.append(VarLenSparseFeat(
+                        SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False),
+                        maxlen=1,
+                        combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
                     select_columns_name.append(feat_name)
-                    continue
-                for key in vocabulary_size.keys():
-                    if key in feat_name:
-                        vocabulary_size_val = vocabulary_size[key]
-                        break
-                varlen_feature_columns.append(VarLenSparseFeat(
-                    SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4), maxlen=1,
-                    combiner='mean', weight_name=feat_name + '_weight'))
-                select_columns_name.append(feat_name)
+                    vocabulary_size_val = 1
+            else:  # 排除所有小时级特征 and 排除sparse特征的weight
+                print("排除所有小时级特征 and 排除sparse特征的weight")
+                for feat_name in all_columns:
+                    if feat_name[:4] == 'hour':
+                        continue
+                    if feat_name in ['ctr_label', 'cvr_label']:
+                        select_columns_name.append(feat_name)
+                        continue
+                    if re.search('sparse', feat_name) != None:  # 是sparse特征
+                        if feat_name[-6:] == 'weight':
+                            continue
+                        for key in vocabulary_size.keys():
+                            if key in feat_name:
+                                vocabulary_size_val = vocabulary_size[key]
+                                break
+                        fixed_feature_columns.append(
+                            SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4,
+                                       use_hash=False))
+                        select_columns_name.append(feat_name)
+                    else:  # 是dense特征
+                        if feat_name[-6:] == 'weight':
+                            select_columns_name.append(feat_name)
+                            continue
+                        varlen_feature_columns.append(VarLenSparseFeat(
+                            SparseFeat(feat_name, vocabulary_size=1 + 1, embedding_dim=4,
+                                       use_hash=False),
+                            maxlen=1,
+                            combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
+                        select_columns_name.append(feat_name)
+
     else:
         if use_hour_features:
             for feat_name in all_columns:
@@ -111,87 +148,87 @@ if __name__ == "__main__":
 
     select_columns_name.remove('ctr_label')
 
-    select_columns_index_name_tuple = []
-    for name in select_columns_name:
-        select_columns_index_name_tuple.append((columns_name_index[name], name))
-    # print("select_columns_index_name_tuple:",select_columns_index_name_tuple)
-    select_columns_index_name_tuple.sort(key=lambda k: k[0])
-    # print("select_columns_index_name_tuple:\n", select_columns_index_name_tuple)
+select_columns_index_name_tuple = []
+for name in select_columns_name:
+    select_columns_index_name_tuple.append((columns_name_index[name], name))
+# print("select_columns_index_name_tuple:",select_columns_index_name_tuple)
+select_columns_index_name_tuple.sort(key=lambda k: k[0])
+# print("select_columns_index_name_tuple:\n", select_columns_index_name_tuple)
 
-    select_columns_index = [value[0] for value in select_columns_index_name_tuple]
-    select_columns_name1 = [value[1] for value in select_columns_index_name_tuple]
-    print("\nin model select_columns_name:\n", select_columns_name1)
-    print("\nin model select_columns_index:\n", select_columns_index)
-    # print("select_columns_index len:",len(select_columns_index))
-    vocabulary_size = conf["vocabulary"]
+select_columns_index = [value[0] for value in select_columns_index_name_tuple]
+select_columns_name1 = [value[1] for value in select_columns_index_name_tuple]
+print("\nin model select_columns_name:\n", select_columns_name1)
+print("\nin model select_columns_index:\n", select_columns_index)
+# print("select_columns_index len:",len(select_columns_index))
+vocabulary_size = conf["vocabulary"]
 
-    # 将来新增列的时候这个位置是个需要调整的点
-    # defaults = [[0], [tf.constant(0, dtype=tf.int64)], [tf.constant(0, dtype=tf.int64)]] + [[0.0]] * (
-    #            len(select_columns_name) - 3)
-    defaults = [[0.0]] * len(select_columns_name1)
-    # print("\ndefaults:\n\n",len(defaults))
-    select_columns_name1.remove("cvr_label")
-    train_data_path = conf['train_data_path']
-    eval_data_path = conf['eval_data_path']
-
-
-    def get_dataset(file_path=train_data_path, perform_shuffle=True, repeat_count=1, batch_size=1024):
-        def decode_csv(line):
-            res = dict()
-            parsed_line = tf.io.decode_csv(line, record_defaults=defaults, field_delim=',',
-                                           select_cols=select_columns_index)
-            label = parsed_line[0]
-            print("\nlen\n", len(parsed_line))
-            print("\nparsed_line:\n", parsed_line)
-            del parsed_line[0]
-            features = parsed_line  # Everything but last elements are the features
-            for i, name in enumerate(select_columns_name1):
-                if name[-6:] == 'weight':
-                    res[name] = [features[i]]
-                else:
-                    res[name] = features[i]
-                pass
-
-            # d = dict(zip(select_columns_name1, features)), label
-            d = res, label
-            return d
-
-        dataset = (tf.data.TextLineDataset(file_path, buffer_size=20000000, num_parallel_reads=20)  # Read text file
-                   .map(decode_csv, num_parallel_calls=20))  # Trans:form each elem by applying decode_csv fn
-        if perform_shuffle:
-            # Randomizes input using a window of 256 elements (read into memory)
-            dataset = dataset.shuffle(buffer_size=batch_size * 8)
-        dataset = dataset.batch(batch_size=batch_size)  # Batch size to use
-        # dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
-        dataset = dataset.prefetch(batch_size * 2)
-        dataset = dataset.cache()
-        dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
-        return dataset
+# 将来新增列的时候这个位置是个需要调整的点
+# defaults = [[0], [tf.constant(0, dtype=tf.int64)], [tf.constant(0, dtype=tf.int64)]] + [[0.0]] * (
+#            len(select_columns_name) - 3)
+defaults = [[0.0]] * len(select_columns_name1)
+# print("\ndefaults:\n\n",len(defaults))
+select_columns_name1.remove("cvr_label")
+train_data_path = conf['train_data_path']
+eval_data_path = conf['eval_data_path']
 
 
-    linear_feature_columns = varlen_feature_columns
-    dnn_feature_columns = varlen_feature_columns
-    callbacks = []
-    GPU = True
-    if GPU:
-        strategy = tf.distribute.MirroredStrategy(devices=['/gpu:0', '/gpu:1', '/gpu:2', '/gpu:3'])
-        # strategy = tf.distribute.MirroredStrategy(devices=['/gpu:3'])
-        with strategy.scope():
-            model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256],
-                           task='binary',
-                           dnn_dropout=0, dnn_activation='relu', dnn_use_bn=False)
-            model.compile("adam", "binary_crossentropy", metrics=['binary_crossentropy', tf.keras.metrics.AUC()])
-        # model.run_eagerly = True
-        model.fit_generator(generator=get_dataset(), steps_per_epoch=None, epochs=10, verbose=2, callbacks=callbacks,
-                            validation_data=get_dataset(eval_data_path), validation_steps=None, validation_freq=1,
-                            class_weight=None,
-                            max_queue_size=100, workers=10, use_multiprocessing=False, shuffle=True, initial_epoch=0)
-    else:
-        model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256], task='binary',
+def get_dataset(file_path=train_data_path, perform_shuffle=True, repeat_count=1, batch_size=1024):
+    def decode_csv(line):
+        res = dict()
+        parsed_line = tf.io.decode_csv(line, record_defaults=defaults, field_delim=',',
+                                       select_cols=select_columns_index)
+        label = parsed_line[0]
+        print("\nlen\n", len(parsed_line))
+        print("\nparsed_line:\n", parsed_line)
+        del parsed_line[0]
+        features = parsed_line  # Everything but last elements are the features
+        for i, name in enumerate(select_columns_name1):
+            if name[-6:] == 'weight':
+                res[name] = [features[i]]
+            else:
+                res[name] = features[i]
+            pass
+
+        # d = dict(zip(select_columns_name1, features)), label
+        d = res, label
+        return d
+
+    dataset = (tf.data.TextLineDataset(file_path, buffer_size=2000000, num_parallel_reads=20)  # Read text file
+               .map(decode_csv, num_parallel_calls=20))  # Trans:form each elem by applying decode_csv fn
+    if perform_shuffle:
+        # Randomizes input using a window of 256 elements (read into memory)
+        dataset = dataset.shuffle(buffer_size=batch_size * 8)
+    dataset = dataset.batch(batch_size=batch_size)  # Batch size to use
+    # dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+    dataset = dataset.prefetch(batch_size * 2)
+    dataset = dataset.cache()
+    dataset = dataset.repeat(repeat_count)  # Repeats dataset this # times
+    return dataset
+
+
+linear_feature_columns = varlen_feature_columns
+dnn_feature_columns = varlen_feature_columns
+callbacks = []
+GPU = False
+if GPU:
+    strategy = tf.distribute.MirroredStrategy(devices=['/gpu:0', '/gpu:1', '/gpu:2', '/gpu:3'])
+    # strategy = tf.distribute.MirroredStrategy(devices=['/gpu:3'])
+    with strategy.scope():
+        model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256],
+                       task='binary',
                        dnn_dropout=0, dnn_activation='relu', dnn_use_bn=False)
         model.compile("adam", "binary_crossentropy", metrics=['binary_crossentropy', tf.keras.metrics.AUC()])
-        model.run_eagerly = True
-        model.fit_generator(generator=get_dataset(), steps_per_epoch=None, epochs=10, verbose=2, callbacks=callbacks,
-                            validation_data=get_dataset(eval_data_path), validation_steps=None, validation_freq=1,
-                            class_weight=None,
-                            max_queue_size=100, workers=10, use_multiprocessing=False, shuffle=True, initial_epoch=0)
+    # model.run_eagerly = True
+    model.fit_generator(generator=get_dataset(), steps_per_epoch=None, epochs=10, verbose=2, callbacks=callbacks,
+                        validation_data=get_dataset(eval_data_path), validation_steps=None, validation_freq=1,
+                        class_weight=None,
+                        max_queue_size=100, workers=10, use_multiprocessing=False, shuffle=True, initial_epoch=0)
+else:
+    model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256], task='binary',
+                   dnn_dropout=0, dnn_activation='relu', dnn_use_bn=False)
+    model.compile("adam", "binary_crossentropy", metrics=['binary_crossentropy', tf.keras.metrics.AUC()])
+    model.run_eagerly = True
+    model.fit_generator(generator=get_dataset(), steps_per_epoch=None, epochs=10, verbose=2, callbacks=callbacks,
+                        validation_data=get_dataset(eval_data_path), validation_steps=None, validation_freq=1,
+                        class_weight=None,
+                        max_queue_size=100, workers=10, use_multiprocessing=False, shuffle=True, initial_epoch=0)
