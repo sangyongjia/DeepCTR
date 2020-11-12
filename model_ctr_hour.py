@@ -223,6 +223,7 @@ if GPU:
                         validation_data=get_dataset(eval_data_path), validation_steps=None, validation_freq=1,
                         class_weight=None,
                         max_queue_size=100, workers=10, use_multiprocessing=False, shuffle=True, initial_epoch=0)
+    tf.saved_model.save(model, "./models")
 else:
     model = DeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=[1024, 512, 256], task='binary',
                    dnn_dropout=0, dnn_activation='relu', dnn_use_bn=False)
