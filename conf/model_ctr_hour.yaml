@@ -1268,7 +1268,39 @@ dense_feaures : [ "day1_product_order_count",
                   "hour24_user_buy_order_count",
                   "hour2_user_buy_real_pay_sum",
                   "hour7_user_buy_real_pay_sum",
-                  "hour24_user_buy_real_pay_sum",]
+                  "hour24_user_buy_real_pay_sum",
+                  "hour1_user_productpageview_expose",
+                  "hour2_user_productpageview_expose",
+                  "hour7_user_productpageview_expose",
+                  "hour15_user_productpageview_expose",
+                  "hour24_user_productpageview_expose",
+                  "hour2_user_click_count",
+                  "hour7_user_click_count",
+                  "hour24_user_click_count",
+                  "hour2_user_click_brand_count",
+                  "hour7_user_click_brand_count",
+                  "hour24_user_click_brand_count",
+                  "hour2_user_click_ctgry3_count",
+                  "hour7_user_click_ctgry3_count",
+                  "hour24_user_click_ctgry3_count",
+                  "hour24_user_click_daigou_max",
+                  "hour24_user_click_daigou_min",
+                  "hour2_user_click_daigou_avg",
+                  "hour7_user_click_daigou_avg",
+                  "hour24_user_click_daigou_avg",
+                  "hour2_user_click_sale_min",
+                  "hour7_user_click_sale_min",
+                  "hour24_user_click_sale_min",
+                  "hour2_user_click_sale_avg",
+                  "hour7_user_click_sale_avg",
+                  "hour24_user_click_sale_avg",
+                  "hour2_user_click_sale_percentile02",
+                  "hour7_user_click_sale_percentile02",
+                  "hour24_user_click_sale_percentile02",
+                  "hour2_user_click_sale_percentile08",
+                  "hour7_user_click_sale_percentile08",
+                  "hour24_user_click_sale_percentile08",
+                  ]
 sparse_features : [ "product_ctg3_sparse",
                       "product_brand_sparse",
                       "day2_brand_order_ctg3_sparse",
@@ -1343,5 +1375,5 @@ vocabulary : { "product_ctg3_sparse": 6000,
                "hour24_user_productpageview_click_ctg3_sparse": 6000,}
 #train_data_path: /alg_data/syj/akc_h5_search_rank_data/train_data_20200706-0909_ctcvr_1:4:5_standard_svm2csv.txt
 #eval_data_path: /alg_data/syj/akc_h5_search_rank_data/eval_data_20200706-0909_ctcvr_1:4:5_standard_svm2csv.txt
-train_data_path: ./test_data.txt
-eval_data_path: ./test_data.txt
+train_data_path: ./test_data1.txt
+eval_data_path: ./test_data1.txt
