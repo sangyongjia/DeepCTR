@@ -171,6 +171,8 @@ select_columns_name1.remove("cvr_label")
 train_data_path = conf['train_data_path']
 eval_data_path = conf['eval_data_path']
 
+print("select_columns_name1:", select_columns_name1)
+print("len of select_columns_name1:", len(select_columns_name1))
 
 def get_dataset(file_path=train_data_path, perform_shuffle=True, repeat_count=1, batch_size=1024):
     def decode_csv(line):
