@@ -104,10 +104,11 @@ if __name__ == "__main__":
                         for key in vocabulary_size.keys():
                             if key in feat_name:
                                 vocabulary_size_val = vocabulary_size[key]
+                                embedding_name = key
                                 break
                         fixed_feature_columns.append(
                             SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4,
-                                       use_hash=False))
+                                       use_hash=False, embedding_name=embedding_name))
                         select_columns_name.append(feat_name)
                     else:  # 是dense特征
                         if feat_name[-6:] == 'weight':
