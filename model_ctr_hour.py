@@ -83,9 +83,11 @@ if __name__ == "__main__":
                     for key in vocabulary_size.keys():
                         if key in feat_name:
                             vocabulary_size_val = vocabulary_size[key]
+                            embedding_name = key
                             break
                     varlen_feature_columns.append(VarLenSparseFeat(
-                        SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False),
+                        SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False,
+                                   embedding_name=embedding_name),
                         maxlen=1,
                         combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
                     select_columns_name.append(feat_name)
@@ -174,6 +176,7 @@ eval_data_path = conf['eval_data_path']
 
 print("select_columns_name1:", select_columns_name1)
 print("len of select_columns_name1:", len(select_columns_name1))
+
 
 def get_dataset(file_path=train_data_path, perform_shuffle=True, repeat_count=1, batch_size=1024):
     def decode_csv(line):
