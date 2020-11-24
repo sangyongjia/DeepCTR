@@ -85,13 +85,14 @@ if __name__ == "__main__":
                         if feat_name[-6:] == 'weight':
                             select_columns_name.append(feat_name)
                             continue
+                        select_columns_name.append(feat_name)
                         for key in vocabulary_size.keys():
                             if key in feat_name:
                                 vocabulary_size_val = vocabulary_size[key]
                                 embedding_name = key
                                 break
                         varlen_feature_columns.append(VarLenSparseFeat(
-                            SparseFeat(feat_name, vocabulary_size=1 + 1, embedding_dim=4,
+                            SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4,
                                        use_hash=False, embedding_name=embedding_name),
                             maxlen=1,
                             combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
@@ -244,7 +245,7 @@ def get_dataset(file_path=train_data_path, perform_shuffle=True, repeat_count=1,
 linear_feature_columns = varlen_feature_columns + fixed_feature_columns
 dnn_feature_columns = varlen_feature_columns + fixed_feature_columns
 callbacks = []
-GPU = False
+GPU = True
 if GPU:
     strategy = tf.distribute.MirroredStrategy(devices=['/gpu:0', '/gpu:1', '/gpu:2', '/gpu:3'])
     # strategy = tf.distribute.MirroredStrategy(devices=['/gpu:3'])
