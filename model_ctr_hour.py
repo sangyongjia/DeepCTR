@@ -13,7 +13,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.python.keras.preprocessing.sequence import pad_sequences
 
-from deepctr.feature_column import SparseFeat, VarLenSparseFeat, get_feature_names
+from deepctr.feature_column import SparseFeat, VarLenSparseFeat, DenseFeat, get_feature_names
 
 from deepctr.models import DeepFM
 
@@ -50,6 +50,7 @@ if __name__ == "__main__":
     use_weight = True
     use_hour_features = False
     use_day_sparse_feature_weight = False
+    use_dense_feat_as_dense = True
     varlen_feature_columns = []
     fixed_feature_columns = []
     if use_weight:
@@ -72,28 +73,8 @@ if __name__ == "__main__":
                 vocabulary_size_val = 1
 
         else:
-            if use_day_sparse_feature_weight:  # 排除所有小时级特征
-                print("排除所有小时级特征:")
-                for feat_name in all_columns:
-                    if feat_name[:4] == 'hour':
-                        continue
-                    if feat_name[-6:] == 'weight' or feat_name in ['ctr_label', 'cvr_label']:
-                        select_columns_name.append(feat_name)
-                        continue
-                    for key in vocabulary_size.keys():
-                        if key in feat_name:
-                            vocabulary_size_val = vocabulary_size[key]
-                            embedding_name = key
-                            break
-                    varlen_feature_columns.append(VarLenSparseFeat(
-                        SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False,
-                                   embedding_name=embedding_name),
-                        maxlen=1,
-                        combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
-                    select_columns_name.append(feat_name)
-                    vocabulary_size_val = 1
-            else:  # 排除所有小时级特征 and 排除sparse特征的weight
-                print("排除所有小时级特征 and 排除sparse特征的weight")
+            print("排除所有小时级特征:")
+            if use_dense_feat_as_dense:  # 以dense的方式使用dense特征
                 for feat_name in all_columns:
                     if feat_name[:4] == 'hour':
                         continue
@@ -102,27 +83,75 @@ if __name__ == "__main__":
                         continue
                     if re.search('sparse', feat_name) != None:  # 是sparse特征
                         if feat_name[-6:] == 'weight':
+                            select_columns_name.append(feat_name)
                             continue
                         for key in vocabulary_size.keys():
                             if key in feat_name:
                                 vocabulary_size_val = vocabulary_size[key]
                                 embedding_name = key
                                 break
-                        fixed_feature_columns.append(
-                            SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4,
-                                       use_hash=False, embedding_name=embedding_name))
-                        select_columns_name.append(feat_name)
+                        varlen_feature_columns.append(VarLenSparseFeat(
+                            SparseFeat(feat_name, vocabulary_size=1 + 1, embedding_dim=4,
+                                       use_hash=False, embedding_name=embedding_name),
+                            maxlen=1,
+                            combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
                     else:  # 是dense特征
                         if feat_name[-6:] == 'weight':
                             select_columns_name.append(feat_name)
+                            fixed_feature_columns.append(DenseFeat(feat_name, 1,))  # dense 特征
+                        else:
                             continue
+            else:
+                if use_day_sparse_feature_weight:  # 以sparse的方式使用dense特征
+                    for feat_name in all_columns:
+                        if feat_name[:4] == 'hour':
+                            continue
+                        if feat_name[-6:] == 'weight' or feat_name in ['ctr_label', 'cvr_label']:
+                            select_columns_name.append(feat_name)
+                            continue
+                        embedding_name = feat_name
+                        for key in vocabulary_size.keys():
+                            if key in feat_name:
+                                vocabulary_size_val = vocabulary_size[key]
+                                embedding_name = key
+                                break
                         varlen_feature_columns.append(VarLenSparseFeat(
-                            SparseFeat(feat_name, vocabulary_size=1 + 1, embedding_dim=4,
-                                       use_hash=False),
+                            SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False,
+                                       embedding_name=embedding_name),
                             maxlen=1,
                             combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
                         select_columns_name.append(feat_name)
-
+                        vocabulary_size_val = 1
+                else:  # 排除所有小时级特征 and 排除sparse特征的weight
+                    print("排除所有小时级特征 and 排除sparse特征的weight")
+                    for feat_name in all_columns:
+                        if feat_name[:4] == 'hour':
+                            continue
+                        if feat_name in ['ctr_label', 'cvr_label']:
+                            select_columns_name.append(feat_name)
+                            continue
+                        if re.search('sparse', feat_name) != None:  # 是sparse特征
+                            if feat_name[-6:] == 'weight':
+                                continue
+                            for key in vocabulary_size.keys():
+                                if key in feat_name:
+                                    vocabulary_size_val = vocabulary_size[key]
+                                    embedding_name = key
+                                    break
+                            fixed_feature_columns.append(
+                                SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4,
+                                           use_hash=False, embedding_name=embedding_name))
+                            select_columns_name.append(feat_name)
+                        else:  # 是dense特征
+                            if feat_name[-6:] == 'weight':
+                                select_columns_name.append(feat_name)
+                                continue
+                            varlen_feature_columns.append(VarLenSparseFeat(
+                                SparseFeat(feat_name, vocabulary_size=1 + 1, embedding_dim=4,
+                                           use_hash=False),
+                                maxlen=1,
+                                combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
+                            select_columns_name.append(feat_name)
     else:
         if use_hour_features:
             for feat_name in all_columns:
