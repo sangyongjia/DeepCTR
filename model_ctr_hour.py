@@ -48,13 +48,39 @@ if __name__ == "__main__":
     select_columns_name = []
     vocabulary_size = conf['vocabulary']
     use_weight = True
-    use_hour_features = False
+    use_hour_features = True
     use_day_sparse_feature_weight = False
     use_dense_feat_as_dense = True
     varlen_feature_columns = []
     fixed_feature_columns = []
     if use_weight:
         if use_hour_features:  # 复现最优结果
+            for feat_name in all_columns:
+                if feat_name in ['ctr_label', 'cvr_label']:
+                    select_columns_name.append(feat_name)
+                    continue
+                if re.search('sparse', feat_name) != None:  # 是sparse特征
+                    if feat_name[-6:] == 'weight':
+                        select_columns_name.append(feat_name)
+                        continue
+                    select_columns_name.append(feat_name)
+                    for key in vocabulary_size.keys():
+                        if key in feat_name:
+                            vocabulary_size_val = vocabulary_size[key]
+                            embedding_name = key
+                            break
+                    varlen_feature_columns.append(VarLenSparseFeat(
+                        SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4,
+                                   use_hash=False, embedding_name=embedding_name),
+                        maxlen=1,
+                        combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
+                else:  # 是dense特征
+                    if feat_name[-6:] == 'weight':
+                        select_columns_name.append(feat_name)
+                        fixed_feature_columns.append(DenseFeat(feat_name, 1, ))  # dense 特征
+                    else:
+                        continue
+
             for feat_name in all_columns:
                 if feat_name[-6:] == 'weight' or feat_name in ['ctr_label', 'cvr_label']:
                     select_columns_name.append(feat_name)
@@ -71,7 +97,23 @@ if __name__ == "__main__":
                     combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
                 select_columns_name.append(feat_name)
                 vocabulary_size_val = 1
-
+        # if use_hour_features:  # 复现最优结果
+        #     for feat_name in all_columns:
+        #         if feat_name[-6:] == 'weight' or feat_name in ['ctr_label', 'cvr_label']:
+        #             select_columns_name.append(feat_name)
+        #             continue
+        #         for key in vocabulary_size.keys():
+        #             if key in feat_name:
+        #                 vocabulary_size_val = vocabulary_size[key]
+        #                 print("key:{0},size:{1},feature name:{2}".format(key, vocabulary_size_val, feat_name))
+        #                 break
+        #         print("size:{0},feature name:{1}".format(vocabulary_size_val, feat_name))
+        #         varlen_feature_columns.append(VarLenSparseFeat(
+        #             SparseFeat(feat_name, vocabulary_size=vocabulary_size_val + 1, embedding_dim=4, use_hash=False),
+        #             maxlen=1,
+        #             combiner='mean', weight_name=feat_name + '_weight', weight_norm=False))
+        #         select_columns_name.append(feat_name)
+        #         vocabulary_size_val = 1
         else:
             print("排除所有小时级特征:")
             if use_dense_feat_as_dense:  # 以dense的方式使用dense特征
