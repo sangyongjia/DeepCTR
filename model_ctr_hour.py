@@ -59,6 +59,9 @@ if __name__ == "__main__":
                 if feat_name in ['ctr_label', 'cvr_label']:
                     select_columns_name.append(feat_name)
                     continue
+                if re.search('query', feat_name) != None:
+                    continue
+
                 if re.search('sparse', feat_name) != None:  # 是sparse特征
                     if feat_name[-6:] == 'weight':
                         select_columns_name.append(feat_name)

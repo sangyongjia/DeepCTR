@@ -1,5 +1,5 @@
 columns_name_in_data_file : [ "ctr_label",
-                              "ctr_label",
+                              "cvr_label",
                               "day1_product_order_count",
                               "day1_product_order_count_weight",
                               "day7_product_order_count",
